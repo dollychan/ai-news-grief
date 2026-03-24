@@ -10,6 +10,7 @@ AI新闻简报生成器 v3
 import json
 import os
 import re
+import sqlite3
 import sys
 import time
 import urllib.request
@@ -17,6 +18,7 @@ import urllib.parse
 import xml.etree.ElementTree as ET
 from collections import Counter
 from datetime import datetime, timedelta
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 try:
@@ -56,6 +58,112 @@ RSS_FILE = SKILL_DIR / "references" / "rss.txt"
 
 # 默认输出目录（可通过 --output 参数覆盖）
 DEFAULT_OUTPUT_DIR = Path.home() / ".openclaw" / "ai-news-brief"
+
+# ========== 本地数据库 ==========
+DB_FILE = DEFAULT_OUTPUT_DIR / "news.db"
+
+_DATE_FORMATS = [
+    '%Y-%m-%dT%H:%M:%S%z',
+    '%Y-%m-%dT%H:%M:%SZ',
+    '%Y-%m-%dT%H:%M:%S',
+    '%Y-%m-%d',
+]
+
+def _parse_date(date_str: str) -> str | None:
+    """将 RSS/搜索/GitHub 的各种日期字符串统一转为 ISO 8601，解析失败返回 None"""
+    if not date_str:
+        return None
+    date_str = date_str.strip()
+    # RFC 2822（RSS 最常见）
+    try:
+        return parsedate_to_datetime(date_str).isoformat()
+    except Exception:
+        pass
+    # ISO 8601 及其变体
+    for fmt in _DATE_FORMATS:
+        try:
+            return datetime.strptime(date_str, fmt).isoformat()
+        except ValueError:
+            pass
+    return None
+
+
+def init_db(db_path: Path) -> sqlite3.Connection:
+    """初始化数据库，建表（若不存在）"""
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(db_path)
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS items (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            url         TEXT    UNIQUE NOT NULL,
+            title       TEXT,
+            source      TEXT,
+            snippet     TEXT,
+            item_type   TEXT,           -- rss | arxiv | social | search | github
+            published_at TEXT,          -- 信息源发布时间（ISO 8601）
+            fetched_at  TEXT NOT NULL,  -- 本次抓取时间（ISO 8601）
+            stars       INTEGER,        -- GitHub 仓库 star 数
+            language    TEXT,           -- GitHub 仓库语言
+            extra       TEXT            -- JSON，存储 hot_value / tag 等扩展字段
+        )
+    ''')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_published ON items(published_at)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_source    ON items(source)')
+    conn.execute('CREATE INDEX IF NOT EXISTS idx_type      ON items(item_type)')
+    conn.commit()
+    return conn
+
+
+def _item_type(item: dict, default_type: str) -> str:
+    """根据 source 字段细分类型（arXiv 单独标记）"""
+    if 'arxiv' in item.get('source', '').lower():
+        return 'arxiv'
+    return default_type
+
+
+def save_to_db(conn: sqlite3.Connection, items: list, item_type: str) -> tuple[int, int]:
+    """批量写入，URL 已存在则跳过。返回 (新增数, 跳过数)"""
+    fetched_at = datetime.now().isoformat()
+    inserted = skipped = 0
+    for item in items:
+        url = item.get('url', '').strip()
+        if not url:
+            continue
+        published_at = _parse_date(
+            item.get('date') or item.get('published') or item.get('created_at') or ''
+        )
+        extra = {}
+        if item.get('hot_value'):
+            extra['hot_value'] = item['hot_value']
+        if item.get('tag'):
+            extra['tag'] = item['tag']
+        try:
+            conn.execute('''
+                INSERT OR IGNORE INTO items
+                    (url, title, source, snippet, item_type,
+                     published_at, fetched_at, stars, language, extra)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                url,
+                item.get('title', ''),
+                item.get('source', ''),
+                item.get('snippet', ''),
+                _item_type(item, item_type),
+                published_at,
+                fetched_at,
+                item.get('stars'),
+                item.get('language'),
+                json.dumps(extra, ensure_ascii=False) if extra else None,
+            ))
+            if conn.execute('SELECT changes()').fetchone()[0]:
+                inserted += 1
+            else:
+                skipped += 1
+        except Exception:
+            pass
+    conn.commit()
+    return inserted, skipped
+
 
 # ========== 从 keywords.md 加载热词库 ==========
 def _load_keywords_from_md():
@@ -1103,12 +1211,17 @@ def main():
     
     # 创建锁文件
     create_lock_file(brief_dir)
-    
+
     print(f"\n{'='*60}")
     print(f"🤖 AI新闻简报生成器 v3")
     print(f"{'='*60}")
     print(f"[{datetime.now()}] 开始采集...")
     print(f"📁 输出目录: {brief_dir}")
+
+    # 初始化数据库
+    db_path = brief_dir / "news.db"
+    conn = init_db(db_path)
+    print(f"🗄️  数据库: {db_path}")
     
     # 设置全局变量供其他函数使用
     global BRIEF_DIR
@@ -1118,10 +1231,12 @@ def main():
     rss_sources = load_rss_sources()
     print(f"📋 已加载 {len(rss_sources)} 个 RSS 源")
     rss_items = fetch_all_rss_feeds(rss_sources)
-    
+    db_rss_new, db_rss_skip = save_to_db(conn, rss_items, 'rss')
+
     # 2. 抓取社交媒体
     social_items = fetch_all_social()
-    
+    db_social_new, _ = save_to_db(conn, social_items, 'social')
+
     # 3. 搜索引擎补充
     search_results = {}
     if HAS_TAVILY:
@@ -1140,9 +1255,12 @@ def main():
             if results:
                 search_results[query] = results
             time.sleep(0.3)
-    
+    all_search = [r for results in search_results.values() for r in results]
+    db_search_new, _ = save_to_db(conn, all_search, 'search')
+
     # 4. GitHub 开源动态
     github_items = fetch_github_repos()
+    db_github_new, _ = save_to_db(conn, github_items, 'github')
 
     # 5. 智能热词提取
     print(f"\n🔥 提取趋势热词...")
@@ -1185,6 +1303,11 @@ def main():
     else:
         print("\n⏭️ 飞书推送已跳过（使用 --feishu 启用）")
     
+    # 关闭数据库
+    db_total = conn.execute('SELECT COUNT(*) FROM items').fetchone()[0]
+    conn.close()
+    db_new_total = db_rss_new + db_social_new + db_search_new + db_github_new
+
     # 统计
     print(f"\n{'='*60}")
     print(f"✅ 完成!")
@@ -1192,8 +1315,9 @@ def main():
     print(f"   社交热点: {len(social_items)} 条")
     print(f"   搜索结果: {sum(len(v) for v in search_results.values())} 条")
     print(f"   趋势热词: {len(trending_keywords)} 个")
+    print(f"   数据库新增: {db_new_total} 条  已跳过(重复): {db_rss_skip} 条  累计: {db_total} 条")
     print(f"{'='*60}\n")
-    
+
     # 清理锁文件
     remove_lock_file(brief_dir)
     
