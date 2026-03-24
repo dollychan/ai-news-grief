@@ -761,26 +761,30 @@ def generate_brief_markdown(rss_items: list, social_items: list, search_results:
     
     # 智能去重
     unique_items, duplicate_count = deduplicate_news(all_items)
-    
+
     print(f"  去重: {len(all_items)} → {len(unique_items)} 条（移除 {duplicate_count} 条重复）")
-    
-    # 分类
+
+    # arXiv 论文单独提取，不参与 freshness 排序
+    arxiv_papers = [i for i in unique_items if 'arxiv' in i.get('source', '').lower()]
+    non_arxiv_items = [i for i in unique_items if 'arxiv' not in i.get('source', '').lower()]
+
+    # 分类（只处理非论文条目，避免 arXiv 被 freshness 挤出）
     categories = {
         "🚀 技术突破": [],
         "📦 产品发布": [],
         "💰 资本动态": [],
         "🏭 行业应用": [],
     }
-    
+
     ai_tech_keywords = ["model", "release", "breakthrough", "技术", "模型", "算法", "架构", "training", "推理"]
     ai_product_keywords = ["launch", "product", "发布", "产品", "agent", "工具", "平台"]
     ai_biz_keywords = ["funding", "融资", "投资", "startup", "估值", "收购", "IPO"]
-    
-    for item in unique_items[:40]:
+
+    for item in non_arxiv_items[:40]:
         title_lower = item.get('title', '').lower()
         source = item.get('source', '')
-        
-        if any(kw in title_lower for kw in ai_tech_keywords) or 'arxiv' in source.lower():
+
+        if any(kw in title_lower for kw in ai_tech_keywords):
             categories["🚀 技术突破"].append(item)
         elif any(kw in title_lower for kw in ai_product_keywords):
             categories["📦 产品发布"].append(item)
@@ -801,12 +805,24 @@ def generate_brief_markdown(rss_items: list, social_items: list, search_results:
                 brief += f"- {marker}[{title}]({url}) *{source}*\n"
             brief += "\n"
     
+    # 前沿论文板块（arXiv，单独展示，不受 freshness 排序影响）
+    if arxiv_papers:
+        brief += "---\n\n## 📄 前沿论文\n\n"
+        for paper in arxiv_papers[:12]:
+            title = paper['title'][:100]
+            url = paper['url']
+            source = paper.get('source', '')
+            brief += f"- [{title}]({url}) *{source}*\n"
+        brief += "\n"
+
     # 社交媒体热点（从已去重的列表中提取，避免重复）
-    # 收集已出现在分类中的标题
+    # 收集已出现在分类和论文中的标题
     shown_titles = set()
     for items in categories.values():
         for item in items:
             shown_titles.add(normalize_title(item.get('title', '')))
+    for paper in arxiv_papers:
+        shown_titles.add(normalize_title(paper.get('title', '')))
     
     # 只显示未在分类中出现的社交热点
     social_sources = ['微博热搜', '知乎热榜', 'B站热门', 'Hacker News', 'Reddit r/MachineLearning', 'Reddit r/LocalLLaMA']
