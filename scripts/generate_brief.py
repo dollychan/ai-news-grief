@@ -523,6 +523,70 @@ def duckduckgo_search(query: str, max_results: int = 5) -> list:
     return results
 
 
+# ========== GitHub 开源项目追踪 ==========
+# 追踪目标：高星 AI 仓库 + 新建但增速迅速的仓库
+GITHUB_AI_TOPICS = [
+    "llm", "large-language-model", "ai-agent", "rag",
+    "llama", "diffusion-model", "transformer", "mcp",
+    "vibe-coding", "deepseek", "qwen",
+]
+
+def fetch_github_repos() -> list:
+    """通过 GitHub Search API 抓取 AI 相关热门/新兴仓库（无需 Token）"""
+    items = []
+    seen = set()
+    week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+
+    queries = [
+        # 近 7 天新建、已有一定 star → 增速迅速的新项目
+        (f"topic:llm created:>{week_ago} stars:>30", "新兴"),
+        (f"topic:ai-agent created:>{week_ago} stars:>20", "新兴"),
+        (f"topic:large-language-model created:>{week_ago} stars:>30", "新兴"),
+        # 持续热门：近期活跃的高 star 仓库
+        (f"topic:llm stars:>500 pushed:>{week_ago}", "热门"),
+        (f"topic:ai-agent stars:>200 pushed:>{week_ago}", "热门"),
+        (f"topic:rag stars:>200 pushed:>{week_ago}", "热门"),
+        (f"topic:mcp stars:>100 pushed:>{week_ago}", "热门"),
+    ]
+
+    print(f"\n🐙 抓取 GitHub 开源动态...")
+    for q, tag in queries:
+        try:
+            url = ("https://api.github.com/search/repositories"
+                   f"?q={urllib.parse.quote(q)}&sort=stars&order=desc&per_page=5")
+            req = urllib.request.Request(url, headers={
+                'User-Agent': 'OpenClawNewsBot/3.0',
+                'Accept': 'application/vnd.github.v3+json',
+            })
+            resp = urllib.request.urlopen(req, timeout=10).read().decode()
+            data = json.loads(resp)
+
+            for repo in data.get('items', []):
+                full_name = repo.get('full_name', '')
+                if full_name in seen:
+                    continue
+                seen.add(full_name)
+                stars = repo.get('stargazers_count', 0)
+                items.append({
+                    'source': 'GitHub',
+                    'title': full_name,
+                    'url': repo.get('html_url', ''),
+                    'snippet': repo.get('description', '') or '',
+                    'stars': stars,
+                    'language': repo.get('language', '') or '',
+                    'created_at': repo.get('created_at', '')[:10],
+                    'tag': tag,
+                    'freshness': 85,
+                })
+            time.sleep(0.8)  # GitHub API rate limit
+        except Exception as e:
+            print(f"    GitHub查询失败: {e}")
+
+    items.sort(key=lambda x: x['stars'], reverse=True)
+    print(f"  发现 {len(items)} 个相关仓库")
+    return items
+
+
 # ========== 智能热词提取 ==========
 def extract_trending_keywords(all_items: list) -> list:
     """从新闻内容中提取趋势关键词"""
@@ -669,7 +733,7 @@ def calculate_freshness(title: str, text: str = "") -> int:
 
 
 # ========== 简报生成 ==========
-def generate_brief_markdown(rss_items: list, social_items: list, search_results: dict, trending_keywords: list) -> str:
+def generate_brief_markdown(rss_items: list, social_items: list, search_results: dict, trending_keywords: list, github_items: list = None) -> str:
     """生成 Markdown 简报"""
     today = datetime.now().strftime("%Y年%m月%d日")
     now = datetime.now().strftime("%H:%M")
@@ -787,6 +851,22 @@ def generate_brief_markdown(rss_items: list, social_items: list, search_results:
                 brief += f" *({hot_value})*"
             brief += "\n"
     
+    # GitHub 开源动态板块
+    if github_items:
+        brief += "---\n\n## 🐙 开源动态\n\n"
+        brief += "| 仓库 | Stars | 语言 | 简介 |\n"
+        brief += "|------|-------|------|------|\n"
+        for repo in github_items[:15]:
+            name = repo['title']
+            url = repo['url']
+            stars = f"⭐{repo['stars']:,}"
+            lang = repo.get('language', '') or '-'
+            desc = (repo.get('snippet', '') or '')[:50]
+            tag = repo.get('tag', '')
+            tag_str = f" `{tag}`" if tag == "新兴" else ""
+            brief += f"| [{name}]({url}){tag_str} | {stars} | {lang} | {desc} |\n"
+        brief += "\n"
+
     # 来源统计
     rss_count = len([i for i in rss_items if i])
     social_count = len([i for i in social_items if i])
@@ -802,6 +882,7 @@ def generate_brief_markdown(rss_items: list, social_items: list, search_results:
 | RSS 订阅 | {rss_count} 条 |
 | 社交媒体 | {social_count} 条 |
 | 搜索引擎 | {search_count} 条 |
+| GitHub 仓库 | {len(github_items) if github_items else 0} 个 |
 | **去重后** | **{len(unique_items)} 条** |
 
 *🧹 已过滤 {duplicate_count} 条重复内容*
@@ -1060,7 +1141,10 @@ def main():
                 search_results[query] = results
             time.sleep(0.3)
     
-    # 4. 智能热词提取
+    # 4. GitHub 开源动态
+    github_items = fetch_github_repos()
+
+    # 5. 智能热词提取
     print(f"\n🔥 提取趋势热词...")
     all_items = rss_items + social_items
     for results in search_results.values():
@@ -1069,18 +1153,18 @@ def main():
     print(f"  发现 {len(trending_keywords)} 个趋势热词")
     for kw in trending_keywords[:5]:
         print(f"    {kw['trend']} {kw['keyword']} ({kw['count']}次)")
-    
-    # 5. 生成简报
+
+    # 6. 生成简报
     print(f"\n📝 生成简报...")
-    brief = generate_brief_markdown(rss_items, social_items, search_results, trending_keywords)
+    brief = generate_brief_markdown(rss_items, social_items, search_results, trending_keywords, github_items)
     
-    # 6. 保存
+    # 7. 保存
     today = datetime.now().strftime("%Y-%m-%d")
     output_file = BRIEF_DIR / f"{today}.md"
     output_file.write_text(brief, encoding="utf-8")
     print(f"💾 已保存: {output_file}")
     
-    # 7. 推送飞书
+    # 8. 推送飞书
     if args.feishu:
         print("\n🚀 推送飞书...")
         
