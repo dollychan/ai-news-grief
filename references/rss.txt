@@ -1,0 +1,52 @@
+分类	媒体名称	语言	RSS / Feed 地址	状态	备注
+中文AI专媒	机器之心	中文	https://www.jiqizhixin.com/rss	✅ 稳定	国内头部AI媒体，深度技术报道
+中文AI专媒	量子位	中文	https://rsshub.app/qbitai	🔧 需RSSHub	AI动态时效性强，覆盖广
+中文AI专媒	新智元	中文	https://rsshub.app/xinzhiyuan	🔧 需RSSHub	AI产业媒体，技术与应用兼顾
+中文AI专媒	AI科技评论	中文	https://rsshub.app/aiot/news	🔧 需RSSHub	垂直AI评论媒体
+中文AI专媒	PaperWeekly	中文	https://rsshub.app/paperweekly	🔧 需RSSHub	AI论文精读，学术前沿
+中文AI专媒	DeepTech深科技	中文	https://rsshub.app/deeptechchina	🔧 需RSSHub	深度科技报道
+中文科技综合	36氪	中文	https://36kr.com/feed	✅ 稳定	含AI创业/融资/产品报道
+中文科技综合	36氪热榜	中文	https://rsshub.app/36kr/hot-list	🔧 需RSSHub	每日热门文章聚合
+中文科技综合	虎嗅	中文	https://www.huxiu.com/rss/0.xml	✅ 稳定	科技商业评论，观点鲜明
+中文科技综合	少数派	中文	https://sspai.com/feed	✅ 稳定	效率工具与AI应用场景
+中文科技综合	InfoQ中文	中文	https://www.infoq.cn/feed	✅ 稳定	工程师向，技术实践深度
+中文科技综合	钛媒体	中文	https://www.tmtpost.com/feed	✅ 稳定	科技商业综合报道
+中文科技综合	雷锋网	中文	https://www.leiphone.com/feed	⚠️ 需验证	智能硬件与AI应用
+中文科技综合	爱范儿	中文	https://www.ifanr.com/feed	✅ 稳定	消费科技，AI产品体验
+中文科技综合	澎湃新闻科技	中文	https://rsshub.app/thepaper/channel/273	🔧 需RSSHub	主流媒体科技频道
+英文AI媒体	TechCrunch AI	英文	https://techcrunch.com/category/artificial-intelligence/feed/	✅ 稳定	初创融资+AI产品新闻，速度快
+英文AI媒体	The Verge AI	英文	https://www.theverge.com/ai-artificial-intelligence/rss/index.xml	✅ 稳定	消费端AI产品，文笔好
+英文AI媒体	VentureBeat AI	英文	https://feeds.feedburner.com/venturebeat/SZYF	✅ 稳定	企业AI应用，深度报道
+英文AI媒体	MIT Technology Review	英文	https://www.technologyreview.com/feed/	✅ 稳定	学术级科技报道，权威可信
+英文AI媒体	Wired AI	英文	https://www.wired.com/feed/tag/artificial-intelligence/rss	✅ 稳定	AI社会影响与前沿技术
+英文AI媒体	Ars Technica AI	英文	https://arstechnica.com/ai/feed/	✅ 稳定	技术深度，工程师友好
+英文AI媒体	The Guardian AI	英文	https://www.theguardian.com/technology/artificialintelligenceai/rss	✅ 稳定	AI伦理与政策报道突出
+英文AI媒体	404 Media	英文	https://www.404media.co/rss	✅ 稳定	独立调查，AI监管/滥用报道
+英文AI媒体	Financial Times AI	英文	https://www.ft.com/artificial-intelligence?format=rss	⚠️ 需验证	金融视角AI分析，部分付费
+AI公司官方博客	OpenAI News	英文	https://openai.com/news/rss.xml	✅ 稳定	OpenAI官方公告，GPT/Sora等
+AI公司官方博客	Anthropic News	英文	https://www.anthropic.com/rss.xml	⚠️ 需验证	Claude相关研究与安全
+AI公司官方博客	Google DeepMind	英文	https://deepmind.google/blog/rss.xml	✅ 稳定	Gemini/AlphaFold等前沿研究
+AI公司官方博客	Google AI Blog	英文	https://blog.google/technology/ai/rss/	✅ 稳定	Google AI产品与研究
+AI公司官方博客	Meta AI Research	英文	https://ai.meta.com/blog/rss/	✅ 稳定	Llama/PyTorch开源动态
+AI公司官方博客	Microsoft AI	英文	https://blogs.microsoft.com/ai/feed/	✅ 稳定	Azure AI/Copilot产品
+AI公司官方博客	Hugging Face Blog	英文	https://huggingface.co/blog/feed.xml	✅ 稳定	开源模型社区，新模型发布
+AI公司官方博客	Mistral AI	英文	https://mistral.ai/news/rss.xml	⚠️ 需验证	欧洲大模型创业代表
+AI公司官方博客	xAI / Grok	英文	https://x.ai/blog/rss.xml	⚠️ 需验证	Musk旗下AI公司
+学术/研究	arXiv CS.AI	英文	https://rss.arxiv.org/rss/cs.AI	✅ 稳定	AI领域最新论文预印本
+学术/研究	arXiv CS.LG	英文	https://rss.arxiv.org/rss/cs.LG	✅ 稳定	机器学习最新论文
+学术/研究	arXiv CS.CL	英文	https://rss.arxiv.org/rss/cs.CL	✅ 稳定	自然语言处理论文
+学术/研究	arXiv CS.CV	英文	https://rss.arxiv.org/rss/cs.CV	✅ 稳定	计算机视觉论文
+学术/研究	Towards Data Science	英文	https://towardsdatascience.com/feed	✅ 稳定	ML实践教程，Medium旗下
+学术/研究	Ahead of AI (Sebastian)	英文	https://magazine.sebastianraschka.com/feed	✅ 稳定	深度ML研究解读，高质量
+学术/研究	The Batch (DeepLearning.AI)	英文	https://www.deeplearning.ai/the-batch/feed/	✅ 稳定	吴恩达主编，每周AI精华
+模型平台	ModelScope趋势	中文	https://rsshub.app/modelscope/trending	🔧 需RSSHub	国内新模型首发平台，比官网消息早
+热榜/社区	微博热搜	中文	https://rsshub.app/weibo/search/hot	🔧 需RSSHub	实时热搜，AI话题波动可追踪
+热榜/社区	知乎热榜	中文	https://rsshub.app/zhihu/hotlist	🔧 需RSSHub	知识社区热议，深度讨论
+热榜/社区	Hacker News Top	英文	https://hnrss.org/frontpage?points=100	✅ 稳定	开发者社区，AI工具最先出现
+热榜/社区	Reddit r/MachineLearning	英文	https://www.reddit.com/r/MachineLearning/.rss	✅ 稳定	ML研究讨论，论文热度先兆
+热榜/社区	Reddit r/LocalLLaMA	英文	https://www.reddit.com/r/LocalLLaMA/.rss	✅ 稳定	开源LLM社区，新模型第一手
+热榜/社区	Product Hunt AI	英文	https://www.producthunt.com/feed?category=artificial-intelligence	✅ 稳定	AI新产品发布，消费端趋势
+热榜/社区	B站科技区热门	中文	https://rsshub.app/bilibili/ranking/0/3/1	🔧 需RSSHub	国内AI科普视频热度
+国际主流媒体	BBC Technology	英文	http://feeds.bbci.co.uk/news/technology/rss.xml	✅ 稳定	国际科技新闻，监管政策
+国际主流媒体	Reuters Technology	英文	https://feeds.reuters.com/reuters/technologyNews	✅ 稳定	路透科技新闻，快讯准确
+国际主流媒体	NYT Technology	英文	https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml	✅ 稳定	纽约时报科技，深度长文
