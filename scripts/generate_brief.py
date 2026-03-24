@@ -102,58 +102,23 @@ def _load_keywords_from_md():
     return emerging, generic
 
 
-EMERGING_TECH_KEYWORDS, GENERIC_KEYWORDS = _load_keywords_from_md()
+_all_kw, GENERIC_KEYWORDS = _load_keywords_from_md()
 
-# 将所有关键词合并为一个集合，用于匹配
+# 从全量字典中分离特殊用途分类，不参与热词统计
+# 新增/修改这些词汇只需编辑 references/keywords.md
+ARXIV_FILTER_KEYWORDS  = [kw.lower() for kw in _all_kw.pop('arxiv_filter', [])]
+SOCIAL_FILTER_KEYWORDS = _all_kw.pop('social_filter', [])
+CAT_TECH_KEYWORDS      = [kw.lower() for kw in _all_kw.pop('cat_tech', [])]
+CAT_PRODUCT_KEYWORDS   = [kw.lower() for kw in _all_kw.pop('cat_product', [])]
+CAT_BIZ_KEYWORDS       = [kw.lower() for kw in _all_kw.pop('cat_biz', [])]
+
+# 剩余分类作为热词追踪词库
+EMERGING_TECH_KEYWORDS = _all_kw
+
+# 将热词合并为一个集合，用于全文匹配
 ALL_TECH_KEYWORDS = set()
-for category, keywords in EMERGING_TECH_KEYWORDS.items():
+for keywords in EMERGING_TECH_KEYWORDS.values():
     ALL_TECH_KEYWORDS.update(kw.lower() for kw in keywords)
-
-# ========== arXiv 论文过滤关键词（用于筛选与 AI 技术方向相关的论文）==========
-# 命中任意一个关键词即保留该论文，新增词汇可直接在此处添加
-ARXIV_FILTER_KEYWORDS = [
-    # 主要实验室 / 公司出品
-    "deepseek", "qwen", "bytedance", "moonshot", "kimi",
-    "anthropic", "claude", "openai", "google", "gemini",
-    "mistral", "meta", "llama", "microsoft",
-    # Agent 与工具使用
-    "agent", "multi-agent", "tool use", "function call",
-    "agentic", "autonomous", "workflow",
-    # 上下文 / 记忆 / 检索
-    "context", "prompt", "memory", "rag",
-    "retrieval", "retrieval-augmented", "long context",
-    # 推理 / 规划
-    "reasoning", "chain-of-thought", "planning", "reflection",
-    "test-time", "inference-time",
-    # 架构
-    "moe", "mixture of experts", "mamba", "ssm", "transformer",
-    "diffusion", "flow matching",
-    # 训练方法
-    "rlhf", "rlaif", "dpo", "grpo", "sft",
-    # 多模态
-    "multimodal", "vision language", "vlm",
-    # 安全 / 对齐
-    "alignment", "safety", "jailbreak",
-]
-
-# ========== 社交媒体过滤关键词（用于筛选 AI 相关内容）==========
-# 在微博、知乎、B站、HN 等平台过滤标题时使用，新增词汇可直接在此处添加
-SOCIAL_FILTER_KEYWORDS = [
-    # 通用 AI
-    "AI", "人工智能", "大模型", "LLM",
-    # 主流模型/产品
-    "ChatGPT", "GPT", "Claude", "DeepSeek", "Sora", "Gemini", "Kimi", "豆包",
-    # 公司/机构
-    "OpenAI", "Anthropic", "智谱", "月之暗面",
-    # 技术概念
-    "Agent", "智能体", "具身智能", "算法", "算力", "芯片",
-    # 英文技术词
-    "machine learning", "deep learning", "neural", "model",
-    # 开发相关
-    "编程", "程序员", "代码", "开源",
-    # 硬件/公司（微博热搜常见相关话题）
-    "英伟达", "华为昇腾",
-]
 
 # ========== RSS 源配置（从 rss.txt 解析）==========
 def load_rss_sources():
@@ -758,19 +723,16 @@ def generate_brief_markdown(rss_items: list, social_items: list, search_results:
         "🏭 行业应用": [],
     }
 
-    ai_tech_keywords = ["model", "release", "breakthrough", "技术", "模型", "算法", "架构", "training", "推理"]
-    ai_product_keywords = ["launch", "product", "发布", "产品", "agent", "工具", "平台"]
-    ai_biz_keywords = ["funding", "融资", "投资", "startup", "估值", "收购", "IPO"]
 
     for item in non_arxiv_items[:40]:
         title_lower = item.get('title', '').lower()
         source = item.get('source', '')
 
-        if any(kw in title_lower for kw in ai_tech_keywords):
+        if any(kw in title_lower for kw in CAT_TECH_KEYWORDS):
             categories["🚀 技术突破"].append(item)
-        elif any(kw in title_lower for kw in ai_product_keywords):
+        elif any(kw in title_lower for kw in CAT_PRODUCT_KEYWORDS):
             categories["📦 产品发布"].append(item)
-        elif any(kw in title_lower for kw in ai_biz_keywords) or '36氪' in source or 'VentureBeat' in source:
+        elif any(kw in title_lower for kw in CAT_BIZ_KEYWORDS) or '36氪' in source or 'VentureBeat' in source:
             categories["💰 资本动态"].append(item)
         else:
             categories["🏭 行业应用"].append(item)
@@ -877,19 +839,16 @@ def generate_feishu_messages(rss_items: list, social_items: list, trending_keywo
         "🏭 行业应用": [],
     }
     
-    ai_tech_keywords = ["model", "release", "breakthrough", "技术", "模型", "算法", "架构", "training", "推理", "arxiv"]
-    ai_product_keywords = ["launch", "product", "发布", "产品", "agent", "工具", "平台"]
-    ai_biz_keywords = ["funding", "融资", "投资", "startup", "估值", "收购", "IPO"]
-    
+
     for item in unique[:50]:
         title_lower = item.get('title', '').lower()
         source = item.get('source', '')
         
-        if any(kw in title_lower for kw in ai_tech_keywords):
+        if any(kw in title_lower for kw in CAT_TECH_KEYWORDS):
             categories["🚀 技术突破"].append(item)
-        elif any(kw in title_lower for kw in ai_product_keywords):
+        elif any(kw in title_lower for kw in CAT_PRODUCT_KEYWORDS):
             categories["📦 产品发布"].append(item)
-        elif any(kw in title_lower for kw in ai_biz_keywords):
+        elif any(kw in title_lower for kw in CAT_BIZ_KEYWORDS):
             categories["💰 资本动态"].append(item)
         else:
             categories["🏭 行业应用"].append(item)

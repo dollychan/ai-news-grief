@@ -215,6 +215,87 @@ AI 在特定行业的应用：
 
 ---
 
+## arXiv过滤 (arxiv_filter)
+
+用于筛选 arXiv 论文的关键词（大小写不敏感，命中任意一个即保留）：
+
+### 主要实验室 / 公司
+- deepseek, qwen, bytedance, moonshot, kimi
+- anthropic, claude, openai, google, gemini
+- mistral, meta, llama, microsoft
+
+### Agent 与工具
+- agent, multi-agent, tool use, function call
+- agentic, autonomous, workflow, orchestration
+
+### 上下文 / 记忆 / 检索
+- context, prompt, memory, rag
+- retrieval, retrieval-augmented, long context, kv cache
+
+### 推理 / 规划
+- reasoning, chain-of-thought, planning, reflection
+- test-time, inference-time, self-play
+
+### 架构 / 训练
+- moe, mixture of experts, mamba, ssm, transformer
+- diffusion, flow matching, rlhf, rlaif, dpo, grpo, sft
+
+### 多模态 / 安全
+- multimodal, vision language, vlm
+- alignment, safety, jailbreak, red teaming
+
+---
+
+## 社交过滤 (social_filter)
+
+用于从微博、知乎、B站、HN 等平台筛选 AI 相关内容（大小写敏感，中文精确匹配）：
+
+### 通用 AI
+- AI, 人工智能, 大模型, LLM
+
+### 主流模型 / 产品
+- ChatGPT, GPT, Claude, DeepSeek, Sora, Gemini, Kimi, 豆包
+
+### 公司 / 机构
+- OpenAI, Anthropic, 智谱, 月之暗面
+
+### 技术概念
+- Agent, 智能体, 具身智能, 算法, 算力, 芯片
+
+### 英文技术词
+- machine learning, deep learning, neural, model
+
+### 开发 / 社区
+- 编程, 程序员, 代码, 开源
+
+### 硬件生态
+- 英伟达, 华为昇腾
+
+---
+
+## 资讯分类-技术 (cat_tech)
+
+用于将新闻归入"技术突破"分类的识别词：
+
+- model, release, breakthrough, training
+- 技术, 模型, 算法, 架构, 推理
+
+## 资讯分类-产品 (cat_product)
+
+用于将新闻归入"产品发布"分类的识别词：
+
+- launch, product
+- 发布, 产品, 工具, 平台
+
+## 资讯分类-资本 (cat_biz)
+
+用于将新闻归入"资本动态"分类的识别词：
+
+- funding, startup, IPO, acquisition, valuation
+- 融资, 投资, 估值, 收购, 上市
+
+---
+
 ## 泛化词汇（不计入热词）
 
 以下词汇太过常见，不计入热词追踪：
