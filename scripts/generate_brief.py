@@ -57,63 +57,52 @@ RSS_FILE = SKILL_DIR / "references" / "rss.txt"
 # 默认输出目录（可通过 --output 参数覆盖）
 DEFAULT_OUTPUT_DIR = Path.home() / ".openclaw" / "ai-news-brief"
 
-# ========== 新兴技术词汇库（用于热词识别）==========
-# 这些是具体的、有辨别力的技术名词，而非泛泛词汇
-EMERGING_TECH_KEYWORDS = {
-    # 具体模型名称
-    "models": [
-        "GPT-4.5", "GPT-5", "o1", "o3", "o4-mini", "Claude 3.5", "Claude 4", "Gemini 2.0", "Gemini 3",
-        "DeepSeek V3", "DeepSeek R1", "Llama 4", "Llama 3.3", "Mistral Large", "Mistral Small",
-        "Qwen 2.5", "Qwen 3", "GLM-4", "Kimi", "豆包", "文心一言 4", "通义千问 3",
-        "Sora", "Kling", "Runway Gen-3", "Pika", "Stable Diffusion 3", "FLUX",
-        "Whisper v3", "Cosmos", "Aria", "RWKV", "Mamba", "Jamba",
-    ],
-    # 技术概念/架构
-    "architectures": [
-        "Mixture of Experts", "MoE", "Sparse Attention", "Linear Attention",
-        "State Space Model", "SSM", "RetNet", "Mamba", "Jamba",
-        "Diffusion Transformer", "DiT", "Flow Matching",
-        "Test-Time Compute", "Chain of Thought", "CoT", "Self-Play",
-        "Constitutional AI", "RLHF", "RLAIF", "DPO", "GRPO",
-        "RAG", "GraphRAG", "Long Context", "1M Context",
-        "Multimodal", "Native Multimodal", "Vision Language Model",
-        "World Model", "World Simulator", "Simulator",
-    ],
-    # 应用范式
-    "paradigms": [
-        "Agentic AI", "AI Agent", "Multi-Agent", "Agent Workflow",
-        "Vibe Coding", "Cursor", "Windsurf", "Replit", "Bolt.new",
-        "AI Native", "AI First", "AI Powered",
-        "Copilot", "Autopilot", "Autonomous",
-        "Function Calling", "Tool Use", "Computer Use",
-        "Code Interpreter", "Artifact", "Canvas",
-    ],
-    # 行业垂直
-    "verticals": [
-        "具身智能", "Embodied AI", "人形机器人", "Humanoid Robot",
-        "自动驾驶", "Autonomous Driving", "FSD", "L4", "Robotaxi",
-        "AI制药", "AI Drug Discovery", "AlphaFold", "Protein Folding",
-        "AI芯片", "AI Accelerator", "NPU", "TPU", "H100", "H200", "B200", "GB200",
-        "推理芯片", "Inference Chip", "Groq", "Cerebras",
-        "边缘AI", "Edge AI", "On-Device AI", "Mobile AI",
-    ],
-    # 企业/产品
-    "products": [
-        "OpenClaw", "龙虾", "Cursor", "Windsurf", "v0", "Bolt.new",
-        "Perplexity", "Poe", "Hugging Face", "Replicate",
-        "Notion AI", "Figma AI", "Canva AI", "Adobe Firefly",
-        "Copilot Studio", "Bedrock", "Vertex AI", "Azure AI",
-    ],
-    # 热门话题
-    "topics": [
-        "Reasoning Model", "Reasoning", "Planning", "Reflection",
-        "AI Safety", "AI Alignment", "AI Governance",
-        "Synthetic Data", "Data Curation", "Data Quality",
-        "Inference Cost", "Inference Speed", "Latency",
-        "Open Weights", "Open Source AI", "Open Model",
-        "Enterprise AI", "B2B AI", "SaaS AI",
-    ],
-}
+# ========== 从 keywords.md 加载热词库 ==========
+def _load_keywords_from_md():
+    """解析 references/keywords.md，返回 (emerging_dict, generic_set)"""
+    md_file = SKILL_DIR / "references" / "keywords.md"
+    emerging = {}
+    generic = set()
+
+    if not md_file.exists():
+        print(f"⚠️ 关键词文件不存在: {md_file}")
+        return emerging, generic
+
+    current_category = None
+    is_generic = False
+
+    with open(md_file, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.rstrip()
+
+            if line.startswith('## '):
+                m = re.search(r'\((\w+)\)', line)
+                if m:
+                    current_category = m.group(1)
+                    is_generic = False
+                    emerging.setdefault(current_category, [])
+                elif '泛化' in line:
+                    current_category = None
+                    is_generic = True
+                else:
+                    current_category = None
+                    is_generic = False
+
+            elif line.startswith('- ') and (current_category or is_generic):
+                # 拆分逗号分隔的关键词，括号内为注释（如"可灵"、"泛指"），直接去除
+                for raw in line[2:].split(','):
+                    kw = re.sub(r'\s*\(.*?\)', '', raw).strip()
+                    if not kw:
+                        continue
+                    if is_generic:
+                        generic.add(kw)
+                    else:
+                        emerging[current_category].append(kw)
+
+    return emerging, generic
+
+
+EMERGING_TECH_KEYWORDS, GENERIC_KEYWORDS = _load_keywords_from_md()
 
 # 将所有关键词合并为一个集合，用于匹配
 ALL_TECH_KEYWORDS = set()
@@ -165,13 +154,6 @@ SOCIAL_FILTER_KEYWORDS = [
     # 硬件/公司（微博热搜常见相关话题）
     "英伟达", "华为昇腾",
 ]
-
-# 泛化词汇（不计入热词追踪，太常见）
-GENERIC_KEYWORDS = {
-    "AI", "人工智能", "大模型", "LLM", "machine learning", "深度学习",
-    "neural network", "神经网络", "artificial intelligence",
-    "ChatGPT", "GPT", "Claude", "Gemini", "OpenAI", "Google",
-}
 
 # ========== RSS 源配置（从 rss.txt 解析）==========
 def load_rss_sources():
